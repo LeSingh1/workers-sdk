@@ -2326,9 +2326,7 @@ function collectCoreBindings(
 			addBinding(aiSearch.binding, "AiSearchInstance", "ai_search", envName);
 		}
 
-		for (const [index, agentMemory] of (
-			env.agent_memory ?? []
-		).entries()) {
+		for (const [index, agentMemory] of (env.agent_memory ?? []).entries()) {
 			if (!agentMemory.binding) {
 				throwMissingBindingError({
 					binding: agentMemory,
@@ -2340,12 +2338,7 @@ function collectCoreBindings(
 				});
 			}
 
-			addBinding(
-				agentMemory.binding,
-				"AgentMemory",
-				"agent_memory",
-				envName
-			);
+			addBinding(agentMemory.binding, "AgentMemory", "agent_memory", envName);
 		}
 
 		// Pipelines handled separately for async schema fetching
@@ -3489,9 +3482,7 @@ function collectCoreBindingsPerEnvironment(
 			});
 		}
 
-		for (const [index, agentMemory] of (
-			env.agent_memory ?? []
-		).entries()) {
+		for (const [index, agentMemory] of (env.agent_memory ?? []).entries()) {
 			if (!agentMemory.binding) {
 				throwMissingBindingError({
 					binding: agentMemory,
