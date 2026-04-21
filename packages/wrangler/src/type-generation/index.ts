@@ -2338,7 +2338,12 @@ function collectCoreBindings(
 				});
 			}
 
-			addBinding(agentMemory.binding, "AgentMemory", "agent_memory", envName);
+			addBinding(
+				agentMemory.binding,
+				"AgentMemoryNamespace",
+				"agent_memory",
+				envName
+			);
 		}
 
 		// Pipelines handled separately for async schema fetching
@@ -3497,7 +3502,7 @@ function collectCoreBindingsPerEnvironment(
 			bindings.push({
 				bindingCategory: "agent_memory",
 				name: agentMemory.binding,
-				type: "AgentMemory",
+				type: "AgentMemoryNamespace",
 			});
 		}
 
