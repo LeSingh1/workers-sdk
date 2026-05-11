@@ -1,4 +1,6 @@
-import type { Config } from './schema'
+import type { Config } from "./schema";
+
+export type { InferEnv } from "./env";
 
 interface ConfigContext {}
 
@@ -12,6 +14,6 @@ type ConfigExport =
   | ConfigFnPromise
   | ConfigFn;
 
-export function defineConfig<T extends ConfigExport>(config: T): T {
-	return null as any
+export function defineConfig<const T extends ConfigExport>(config: T): T {
+	return config;
 }

@@ -1,0 +1,14 @@
+{
+	"name": "@example/worker-config",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"check:type": "tsc"
+	},
+	"devDependencies": {
+		"@cloudflare/worker-config": "workspace:*",
+		"@cloudflare/workers-types": "catalog:default",
+		"typescript": "catalog:default"
+	}
+}
