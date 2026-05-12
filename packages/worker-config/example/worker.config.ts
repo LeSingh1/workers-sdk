@@ -14,6 +14,6 @@ export default defineConfig({
 		MY_AI: { type: "ai" },
 	},
 	exports: {
-		MyDurableObject: { type: 'durable-object', storage: 'sqlite'}
-	}
+		MyDurableObject: { type: "durable-object", storage: "sqlite" },
+	},
 });

@@ -35,7 +35,7 @@ interface BindingTypeMap {
 	worker: Fetcher;
 	"worker-loader": WorkerLoader;
 	workflow: Workflow;
-};
+}
 
 /**
  * Infer the runtime type for a single binding definition.
@@ -92,11 +92,12 @@ type UnwrapConfig<TConfig> =
  * export type Env = InferEnv<typeof config>;
  * ```
  */
-export type InferEnv<TConfig> = UnwrapConfig<TConfig> extends {
-	env: infer TEnv extends Record<string, unknown>;
-}
-	? { [K in keyof TEnv]: InferBindingType<TEnv[K]> }
-	: {};
+export type InferEnv<TConfig> =
+	UnwrapConfig<TConfig> extends {
+		env: infer TEnv extends Record<string, unknown>;
+	}
+		? { [K in keyof TEnv]: InferBindingType<TEnv[K]> }
+		: {};
 
 /**
  * Infer the durable namespace names from a Worker config's exports.
@@ -118,12 +119,13 @@ export type InferEnv<TConfig> = UnwrapConfig<TConfig> extends {
  * type DurableNamespaces = InferDurableNamespaces<typeof config>;
  * ```
  */
-export type InferDurableNamespaces<TConfig> = UnwrapConfig<TConfig> extends {
-	exports: infer TExports extends Record<string, { type: string }>;
-}
-	? {
-			[K in keyof TExports]: TExports[K] extends { type: "durable-object" }
-				? K
-				: never;
-		}[keyof TExports]
-	: never;
+export type InferDurableNamespaces<TConfig> =
+	UnwrapConfig<TConfig> extends {
+		exports: infer TExports extends Record<string, { type: string }>;
+	}
+		? {
+				[K in keyof TExports]: TExports[K] extends { type: "durable-object" }
+					? K
+					: never;
+			}[keyof TExports]
+		: never;

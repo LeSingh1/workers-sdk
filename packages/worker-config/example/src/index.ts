@@ -1,19 +1,24 @@
-import { WorkerEntrypoint, DurableObject } from "cloudflare:workers";
+import {
+	env,
+	exports,
+	WorkerEntrypoint,
+	DurableObject,
+} from "cloudflare:workers";
 
 export class MyEntrypoint extends WorkerEntrypoint {
 	add(a: number, b: number) {
-		return a + b
+		return a + b;
 	}
 }
 
 export class MyDurableObject extends DurableObject {
 	greet(name: string) {
-		return `Hello ${name}`
+		return `Hello ${name}`;
 	}
 }
 
 export default {
 	async fetch(): Promise<Response> {
-		return new Response('Hello world');
+		return new Response("Hello world");
 	},
 } satisfies ExportedHandler<Cloudflare.Env>;
