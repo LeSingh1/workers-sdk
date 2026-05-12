@@ -2,7 +2,7 @@
  * Mapping from binding type literals to Cloudflare runtime types.
  * These types are assumed to be ambient.
  */
-type BindingTypeMap = {
+interface BindingTypeMap {
 	ai: Ai;
 	"ai-search": AiSearchInstance;
 	"ai-search-namespace": AiSearchNamespace;
@@ -20,7 +20,7 @@ type BindingTypeMap = {
 	logfwdr: any;
 	media: MediaBinding;
 	"mtls-certificate": Fetcher;
-	pipeline: any; // Pipeline type is in cloudflare:pipelines module, not global
+	pipeline: any; // TODO: Wrangler's type generation fetches the pipeline schema from the API
 	queue: Queue;
 	"rate-limit": RateLimit;
 	r2: R2Bucket;
@@ -48,6 +48,7 @@ type InferBindingType<TBinding> =
 			TBinding extends { type: "text"; value: infer TValue }
 			? TValue
 			: // Unsafe bindings: map to any
+				// TODO: support more precise unsafe types
 				TBinding extends { type: `unsafe-${string}` }
 				? any
 				: // Standard bindings: lookup in BindingTypeMap
