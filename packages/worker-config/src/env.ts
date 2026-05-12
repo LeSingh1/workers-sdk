@@ -1,6 +1,6 @@
 /**
  * Mapping from binding type literals to Cloudflare runtime types.
- * These types are assumed to be ambient from @cloudflare/workers-types.
+ * These types are assumed to be ambient.
  */
 type BindingTypeMap = {
 	ai: Ai;
@@ -40,43 +40,44 @@ type BindingTypeMap = {
 /**
  * Infer the runtime type for a single binding definition.
  */
-type InferBindingType<B> =
+type InferBindingType<TBinding> =
 	// JSON bindings: infer exact type from value
-	B extends { type: "json"; value: infer V }
-		? V
+	TBinding extends { type: "json"; value: infer TValue }
+		? TValue
 		: // Text bindings: infer literal string type from value
-			B extends { type: "text"; value: infer V }
-			? V
+			TBinding extends { type: "text"; value: infer TValue }
+			? TValue
 			: // Unsafe bindings: map to any
-				B extends { type: `unsafe-${string}` }
+				TBinding extends { type: `unsafe-${string}` }
 				? any
 				: // Standard bindings: lookup in BindingTypeMap
-					B extends { type: infer T extends keyof BindingTypeMap }
-					? BindingTypeMap[T]
+					TBinding extends { type: infer K extends keyof BindingTypeMap }
+					? BindingTypeMap[K]
 					: never;
 
 /**
  * Unwrap function and promise types to get the underlying config.
  */
-type UnwrapConfig<C> =
+type UnwrapConfig<TConfig> =
 	// If it's a function, extract return type and recurse
-	C extends (...args: any[]) => infer R
-		? UnwrapConfig<R>
+	TConfig extends (...args: any[]) => infer TReturn
+		? UnwrapConfig<TReturn>
 		: // If it's a promise, extract the resolved type
-			C extends Promise<infer R>
-			? R
+			TConfig extends Promise<infer TCompletion>
+			? TCompletion
 			: // Otherwise, it's the config itself
-				C;
+				TConfig;
 
 /**
- * Infer the `Env` interface type from a worker config.
+ * Infer the `Env` interface type from a Worker config.
  *
  * This utility type transforms a config object's `env` bindings into their
  * corresponding Cloudflare runtime types.
  *
  * @example
  * ```typescript
- * import { defineConfig, type InferEnv } from "@cloudflare/worker-config";
+ * import { defineConfig } from "@cloudflare/worker-config";
+ * import type { InferEnv } from "@cloudflare/worker-config";
  *
  * const config = defineConfig({
  *   env: {
@@ -90,8 +91,8 @@ type UnwrapConfig<C> =
  * export type Env = InferEnv<typeof config>;
  * ```
  */
-export type InferEnv<C> = UnwrapConfig<C> extends {
-	env: infer E extends Record<string, unknown>;
+export type InferEnv<TConfig> = UnwrapConfig<TConfig> extends {
+	env: infer TEnv extends Record<string, unknown>;
 }
-	? { [K in keyof E]: InferBindingType<E[K]> }
+	? { [K in keyof TEnv]: InferBindingType<TEnv[K]> }
 	: {};
