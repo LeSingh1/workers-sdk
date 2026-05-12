@@ -278,9 +278,9 @@ const ExportSchema = z.discriminatedUnion("type", [
 export const ConfigSchema = z.object({
 	name: z.string().optional(),
 	accountId: z.string().optional(),
-	entrypoint: z.string().optional(),
 	compatibilityDate: z.string().optional(),
 	compatibilityFlags: z.array(z.string()).optional(),
+	entrypoint: z.string().optional(),
 	assets: AssetsSchema.optional(),
 	domains: z.array(z.string()).optional(),
 	triggers: z.array(TriggerSchema).optional(),
