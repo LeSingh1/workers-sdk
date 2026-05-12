@@ -1,6 +1,8 @@
 import type { Config } from "./schema";
 
-export type { InferEnv } from "./env";
+export type { InferEnv, InferDurableNamespaces } from "./env";
+export type { Config } from "./schema";
+export { generateTypes } from "./generate";
 
 interface ConfigContext {}
 

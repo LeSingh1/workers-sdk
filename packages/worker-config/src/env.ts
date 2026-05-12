@@ -97,3 +97,33 @@ export type InferEnv<TConfig> = UnwrapConfig<TConfig> extends {
 }
 	? { [K in keyof TEnv]: InferBindingType<TEnv[K]> }
 	: {};
+
+/**
+ * Infer the durable namespace names from a Worker config's exports.
+ * Returns a union of export names that have `type: "durable-object"`.
+ *
+ * @example
+ * ```typescript
+ * import { defineConfig } from "@cloudflare/worker-config";
+ * import type { InferDurableNamespaces } from "@cloudflare/worker-config";
+ *
+ * const config = defineConfig({
+ *   exports: {
+ *     MyDurableObject: { type: "durable-object", storage: "sqlite" },
+ *     MyWorkflow: { type: "workflow", name: "my-workflow" },
+ *   },
+ * });
+ *
+ * // Inferred as: "MyDurableObject"
+ * type DurableNamespaces = InferDurableNamespaces<typeof config>;
+ * ```
+ */
+export type InferDurableNamespaces<TConfig> = UnwrapConfig<TConfig> extends {
+	exports: infer TExports extends Record<string, { type: string }>;
+}
+	? {
+			[K in keyof TExports]: TExports[K] extends { type: "durable-object" }
+				? K
+				: never;
+		}[keyof TExports]
+	: never;

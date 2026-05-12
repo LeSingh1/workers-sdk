@@ -1,11 +1,19 @@
-// import { env } from "cloudflare:workers";
+import { WorkerEntrypoint, DurableObject } from "cloudflare:workers";
+
+export class MyEntrypoint extends WorkerEntrypoint {
+	add(a: number, b: number) {
+		return a + b
+	}
+}
+
+export class MyDurableObject extends DurableObject {
+	greet(name: string) {
+		return `Hello ${name}`
+	}
+}
 
 export default {
-	async fetch(request, env): Promise<Response> {
-		// TypeScript knows the exact types of all bindings
-		const secret = env.MY_SECRET
-		const text = env.MY_TEXT;
-
-		return new Response(text);
+	async fetch(): Promise<Response> {
+		return new Response('Hello world');
 	},
 } satisfies ExportedHandler<Cloudflare.Env>;

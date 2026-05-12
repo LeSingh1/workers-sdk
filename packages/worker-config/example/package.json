@@ -4,6 +4,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
+		"generate-types": "node --experimental-strip-types generate-types.ts",
 		"check:type": "tsc"
 	},
 	"devDependencies": {
