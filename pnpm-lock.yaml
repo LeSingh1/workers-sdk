@@ -3647,11 +3647,23 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
 
-  packages/worker-config/example:
+  packages/worker-config/examples/worker-a:
     devDependencies:
       '@cloudflare/worker-config':
         specifier: workspace:*
-        version: link:..
+        version: link:../..
+      '@cloudflare/workers-types':
+        specifier: catalog:default
+        version: 4.20260507.1
+      typescript:
+        specifier: catalog:default
+        version: 5.8.3
+
+  packages/worker-config/examples/worker-b:
+    devDependencies:
+      '@cloudflare/worker-config':
+        specifier: workspace:*
+        version: link:../..
       '@cloudflare/workers-types':
         specifier: catalog:default
         version: 4.20260507.1
