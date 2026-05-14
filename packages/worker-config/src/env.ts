@@ -1,3 +1,5 @@
+import type { Bindings } from "./bindings";
+
 /**
  * Mapping from binding type literals to Cloudflare runtime types.
  * These types are assumed to be ambient.
@@ -81,11 +83,11 @@ type UnwrapConfig<TConfig> =
  * import type { InferEnv } from "@cloudflare/worker-config";
  *
  * const config = defineConfig({
- *   env: {
- *     MY_KV: { type: "kv" },
- *     MY_DB: { type: "d1" },
- *     CONFIG: { type: "json", value: { debug: true } },
- *   },
+ *   env: (bindings) => ({
+ *     MY_KV: bindings.kv(),
+ *     MY_DB: bindings.d1(),
+ *     CONFIG: bindings.json({ debug: true }),
+ *   }),
  * });
  *
  * // Inferred as: { MY_KV: KVNamespace; MY_DB: D1Database; CONFIG: { debug: boolean } }
@@ -94,7 +96,7 @@ type UnwrapConfig<TConfig> =
  */
 export type InferEnv<TConfig> =
 	UnwrapConfig<TConfig> extends {
-		env: infer TEnv extends Record<string, unknown>;
+		env: (bindings: Bindings) => infer TEnv extends Record<string, unknown>;
 	}
 		? { [K in keyof TEnv]: InferBindingType<TEnv[K]> }
 		: {};
