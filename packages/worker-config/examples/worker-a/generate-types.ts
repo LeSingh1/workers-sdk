@@ -1,9 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { generateTypes } from "@cloudflare/worker-config";
-import config from "./worker.config.ts";
 
 const content = generateTypes({
-	config,
 	configPath: "./worker.config",
 });
 

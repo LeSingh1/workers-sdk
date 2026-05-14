@@ -1,9 +1,4 @@
-import {
-	env,
-	exports,
-	WorkerEntrypoint,
-	DurableObject,
-} from "cloudflare:workers";
+import { WorkerEntrypoint, DurableObject } from "cloudflare:workers";
 
 export class MyEntrypoint extends WorkerEntrypoint {
 	add(a: number, b: number) {

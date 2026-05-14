@@ -131,3 +131,31 @@ export type InferDurableNamespaces<TConfig> =
 					: never;
 			}[keyof TExports]
 		: never;
+
+/**
+ * Infer the main module type from a Worker config's entrypoint.
+ * If entrypoint is a module namespace object, returns that type.
+ * If entrypoint is a string or not present, returns never.
+ *
+ * @example
+ * ```typescript
+ * import * as Worker from './src' with { type: 'cf-worker' }
+ * import { defineConfig } from "@cloudflare/worker-config";
+ * import type { InferMainModule } from "@cloudflare/worker-config";
+ *
+ * const config = defineConfig({
+ *   entrypoint: Worker,
+ * });
+ *
+ * // Inferred as: typeof Worker (the module's exports)
+ * type MainModule = InferMainModule<typeof config>;
+ * ```
+ */
+export type InferMainModule<TConfig> =
+	UnwrapConfig<TConfig> extends { entrypoint: infer TModule }
+		? TModule extends string
+			? never
+			: TModule extends Record<string, unknown>
+				? TModule
+				: never
+		: never;

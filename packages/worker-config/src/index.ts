@@ -4,7 +4,7 @@ import type { Config } from "./schema";
 
 export { bindings };
 export type { Bindings };
-export type { InferEnv, InferDurableNamespaces } from "./env";
+export type { InferEnv, InferDurableNamespaces, InferMainModule } from "./env";
 export type { Config } from "./schema";
 export { generateTypes } from "./generate";
 
@@ -16,10 +16,16 @@ interface ConfigContext {}
 type EnvFn = (b: Bindings) => Record<string, { type: string }>;
 
 /**
- * Config with function-based env (for user-facing API).
+ * Represents a Worker module namespace (from `import * as Module from '...'`).
  */
-type ConfigWithEnvFn = Omit<Config, "env"> & {
+type WorkerModule = Record<string, unknown>;
+
+/**
+ * Config with function-based env and module-based entrypoint (for user-facing API).
+ */
+type ConfigWithEnvFn = Omit<Config, "env" | "entrypoint"> & {
 	env?: EnvFn;
+	entrypoint?: string | WorkerModule;
 };
 
 type ConfigFnObject = (ctx: ConfigContext) => ConfigWithEnvFn;
