@@ -12,8 +12,9 @@ interface ConfigContext {}
 
 /**
  * The env function type - receives a bindings helper and returns a record of bindings.
+ * Uses `Bindings<any>` to allow any config type annotation by the user.
  */
-type EnvFn = (b: Bindings) => Record<string, { type: string }>;
+type EnvFn = (b: Bindings<any>) => Record<string, { type: string }>;
 
 /**
  * Represents a Worker module namespace (from `import * as Module from '...'`).

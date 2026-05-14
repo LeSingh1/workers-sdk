@@ -297,9 +297,10 @@ interface WorkflowBinding extends WorkflowBindingOptions {
 }
 
 /**
- * The Bindings interface - provides typed builder methods for each binding type.
+ * Base bindings interface - provides typed builder methods for non-cross-worker binding types.
+ * This is used internally and extended by Bindings<TConfigs>.
  */
-export interface Bindings {
+interface BaseBindings {
 	// Value-first bindings
 	text<T extends string>(value: T): TextBinding<T>;
 	json<T>(value: T): JsonBinding<T>;
@@ -320,7 +321,6 @@ export interface Bindings {
 	dispatchNamespace(
 		options: DispatchNamespaceBindingOptions
 	): DispatchNamespaceBinding;
-	durableObject(options: DurableObjectBindingOptions): DurableObjectBinding;
 	flagship(options: FlagshipBindingOptions): FlagshipBinding;
 	hyperdrive(options: HyperdriveBindingOptions): HyperdriveBinding;
 	images(options?: ImagesBindingOptions): ImagesBinding;
@@ -345,57 +345,367 @@ export interface Bindings {
 	versionMetadata(): VersionMetadataBinding;
 	vpcService(options: VpcServiceBindingOptions): VpcServiceBinding;
 	vpcNetwork(options: VpcNetworkBindingOptions): VpcNetworkBinding;
-	worker(options: WorkerBindingOptions): WorkerBinding;
 	workerLoader(): WorkerLoaderBinding;
-	workflow(options: WorkflowBindingOptions): WorkflowBinding;
 }
 
 /**
- * Runtime bindings object - the actual implementation that can be passed to env functions.
+ * Typed binding return types for cross-worker bindings.
+ * These include a `__typed` marker and `__config` to carry type information
+ * for InferBindingType to extract the correct runtime types.
  */
-export const bindings: Bindings = {
+
+interface TypedWorkerBinding<
+	TConfig,
+	TName extends string,
+	TExport extends string,
+> {
+	type: "worker";
+	workerName: TName;
+	exportName?: TExport;
+	props?: Record<string, unknown>;
+	remote?: boolean;
+	/** @internal Type marker for typed bindings */
+	__typed: true;
+	/** @internal Carries the config type for inference */
+	__config: TConfig;
+}
+
+interface TypedDurableObjectBinding<
+	TConfig,
+	TName extends string,
+	TExport extends string,
+> {
+	type: "durable-object";
+	workerName: TName;
+	exportName: TExport;
+	/** @internal Type marker for typed bindings */
+	__typed: true;
+	/** @internal Carries the config type for inference */
+	__config: TConfig;
+}
+
+interface TypedWorkflowBinding<
+	TConfig,
+	TName extends string,
+	TExport extends string,
+> {
+	type: "workflow";
+	workerName: TName;
+	exportName: TExport;
+	remote?: boolean;
+	/** @internal Type marker for typed bindings */
+	__typed: true;
+	/** @internal Carries the config type for inference */
+	__config: TConfig;
+}
+
+/**
+ * Import type utilities from env.ts for use in Bindings.
+ */
+import type {
+	DefaultConfig,
+	InferWorkerName,
+	InferDurableObjectExports,
+	InferWorkflowExports,
+	InferEntrypointExports,
+} from "./env";
+
+/**
+ * Helper to unwrap config (mirrors the one in env.ts).
+ */
+type UnwrapConfig<TConfig> = TConfig extends (...args: any[]) => infer TReturn
+	? UnwrapConfig<TReturn>
+	: TConfig extends Promise<infer TCompletion>
+		? TCompletion
+		: TConfig;
+
+/**
+ * TypedBindings interface for cross-worker bindings with type safety.
+ *
+ * When you annotate the bindings parameter with `TypedBindings<WorkerConfig>`,
+ * the `worker`, `durableObject`, and `workflow` methods become type-safe:
+ * - `workerName` is constrained to the `name` from the config(s)
+ * - `exportName` is constrained to valid exports for that worker
+ * - The resulting binding types are fully parameterized
+ *
+ * Unknown worker names (not matching any config) fall back to loosely-typed bindings.
+ *
+ * @example
+ * ```typescript
+ * import type WorkerAConfig from "../worker-a/worker.config";
+ * import { defineConfig, type TypedBindings } from "@cloudflare/worker-config";
+ *
+ * export default defineConfig({
+ *   env: (bindings: TypedBindings<WorkerAConfig>) => ({
+ *     // Type-safe: workerName must be "worker-a"
+ *     WORKER_A: bindings.worker({ workerName: "worker-a" }),
+ *     // Type-safe: exportName must be a valid durable object export
+ *     MY_DO: bindings.durableObject({ workerName: "worker-a", exportName: "MyDurableObject" }),
+ *     // Loosely typed: unknown worker
+ *     EXTERNAL: bindings.worker({ workerName: "external-service" }),
+ *   }),
+ * });
+ * ```
+ */
+/**
+ * Helper type to compute valid exports for a worker binding.
+ * For known workers, returns the constrained union. For unknown workers, returns string.
+ */
+type WorkerExportName<TConfigs, TName extends string> =
+	TName extends InferWorkerName<TConfigs>
+		? InferEntrypointExports<Extract<UnwrapConfig<TConfigs>, { name: TName }>>
+		: string;
+
+/**
+ * Helper type to compute valid exports for a durable object binding.
+ * For known workers, returns the constrained union. For unknown workers, returns string.
+ */
+type DurableObjectExportName<TConfigs, TName extends string> =
+	TName extends InferWorkerName<TConfigs>
+		? InferDurableObjectExports<
+				Extract<UnwrapConfig<TConfigs>, { name: TName }>
+			>
+		: string;
+
+/**
+ * Helper type to compute valid exports for a workflow binding.
+ * For known workers, returns the constrained union. For unknown workers, returns string.
+ */
+type WorkflowExportName<TConfigs, TName extends string> =
+	TName extends InferWorkerName<TConfigs>
+		? InferWorkflowExports<Extract<UnwrapConfig<TConfigs>, { name: TName }>>
+		: string;
+
+/**
+ * Return type for typed worker bindings - typed if known, untyped if unknown.
+ */
+type WorkerBindingResult<
+	TConfigs,
+	TName extends string,
+	TExport extends string,
+> =
+	TName extends InferWorkerName<TConfigs>
+		? TypedWorkerBinding<
+				Extract<UnwrapConfig<TConfigs>, { name: TName }>,
+				TName,
+				TExport
+			>
+		: WorkerBinding;
+
+/**
+ * Return type for typed durable object bindings.
+ */
+type DurableObjectBindingResult<
+	TConfigs,
+	TName extends string,
+	TExport extends string,
+> =
+	TName extends InferWorkerName<TConfigs>
+		? TypedDurableObjectBinding<
+				Extract<UnwrapConfig<TConfigs>, { name: TName }>,
+				TName,
+				TExport
+			>
+		: DurableObjectBinding;
+
+/**
+ * Return type for typed workflow bindings.
+ */
+type WorkflowBindingResult<
+	TConfigs,
+	TName extends string,
+	TExport extends string,
+> =
+	TName extends InferWorkerName<TConfigs>
+		? TypedWorkflowBinding<
+				Extract<UnwrapConfig<TConfigs>, { name: TName }>,
+				TName,
+				TExport
+			>
+		: WorkflowBinding;
+
+/**
+ * Loose autocomplete type - allows any string but suggests specific literals.
+ * The `& {}` prevents TypeScript from collapsing the union.
+ */
+type Autocomplete<T extends string> = T | (string & {});
+
+/**
+ * Bindings interface for defining Worker bindings in config.
+ *
+ * When used without a type parameter (or with `DefaultConfig`), all cross-worker
+ * bindings (`worker`, `durableObject`, `workflow`) allow any `workerName` and `exportName`.
+ *
+ * When parameterized with specific config types, cross-worker bindings become type-safe:
+ * - `workerName` is constrained to the `name` from the config(s)
+ * - `exportName` is constrained to valid exports for that worker
+ * - The resulting binding types are fully parameterized
+ *
+ * @example
+ * ```typescript
+ * import type WorkerAConfig from "../worker-a/worker.config";
+ * import { defineConfig, type Bindings } from "@cloudflare/worker-config";
+ *
+ * export default defineConfig({
+ *   env: (bindings: Bindings<typeof WorkerAConfig>) => ({
+ *     // Type-safe: workerName must be "worker-a"
+ *     WORKER_A: bindings.worker({ workerName: "worker-a" }),
+ *     // Type-safe: exportName must be a valid durable object export
+ *     MY_DO: bindings.durableObject({ workerName: "worker-a", exportName: "MyDurableObject" }),
+ *     // Loosely typed: unknown worker (when using DefaultConfig or union of configs)
+ *     EXTERNAL: bindings.worker({ workerName: "external-service" }),
+ *   }),
+ * });
+ * ```
+ */
+export interface Bindings<TConfigs = DefaultConfig> extends BaseBindings {
+	/**
+	 * Create a worker (Service) binding.
+	 * When workerName matches a known config, exportName is constrained to valid entrypoints.
+	 * Unknown workers allow any exportName string.
+	 */
+	worker<
+		TName extends Autocomplete<InferWorkerName<TConfigs>>,
+		TExport extends Autocomplete<WorkerExportName<TConfigs, TName>>,
+	>(options: {
+		workerName: TName;
+		exportName?: TExport;
+		props?: Record<string, unknown>;
+		remote?: boolean;
+	}): WorkerBindingResult<TConfigs, TName, TExport>;
+
+	/**
+	 * Create a durable object binding.
+	 * When workerName matches a known config, exportName is constrained to valid DO exports.
+	 * Unknown workers allow any exportName string.
+	 */
+	durableObject<
+		TName extends Autocomplete<InferWorkerName<TConfigs>>,
+		TExport extends Autocomplete<DurableObjectExportName<TConfigs, TName>>,
+	>(options: {
+		workerName: TName;
+		exportName: TExport;
+	}): DurableObjectBindingResult<TConfigs, TName, TExport>;
+
+	/**
+	 * Create a workflow binding.
+	 * When workerName matches a known config, exportName is constrained to valid workflow exports.
+	 * Unknown workers allow any exportName string.
+	 */
+	workflow<
+		TName extends Autocomplete<InferWorkerName<TConfigs>>,
+		TExport extends Autocomplete<WorkflowExportName<TConfigs, TName>>,
+	>(options: {
+		workerName: TName;
+		exportName: TExport;
+		remote?: boolean;
+	}): WorkflowBindingResult<TConfigs, TName, TExport>;
+}
+
+/**
+ * Runtime bindings implementation object.
+ * This is the actual implementation that produces binding configuration objects.
+ */
+const bindingsImpl = {
 	// Value-first bindings
-	text: (value) => ({ type: "text", value }),
-	json: (value) => ({ type: "json", value }),
+	text: <T extends string>(value: T) => ({ type: "text" as const, value }),
+	json: <T>(value: T) => ({ type: "json" as const, value }),
 
 	// Standard bindings
-	ai: (options = {}) => ({ type: "ai", ...options }),
-	aiSearch: (options) => ({ type: "ai-search", ...options }),
-	aiSearchNamespace: (options) => ({ type: "ai-search-namespace", ...options }),
+	ai: (options = {}) => ({ type: "ai" as const, ...options }),
+	aiSearch: (options: AiSearchBindingOptions) => ({
+		type: "ai-search" as const,
+		...options,
+	}),
+	aiSearchNamespace: (options: AiSearchNamespaceBindingOptions) => ({
+		type: "ai-search-namespace" as const,
+		...options,
+	}),
 	analyticsEngineDataset: (options = {}) => ({
-		type: "analytics-engine-dataset",
+		type: "analytics-engine-dataset" as const,
 		...options,
 	}),
-	artifacts: (options) => ({ type: "artifacts", ...options }),
-	assets: () => ({ type: "assets" }),
-	browser: (options = {}) => ({ type: "browser", ...options }),
-	d1: (options = {}) => ({ type: "d1", ...options }),
-	dispatchNamespace: (options) => ({ type: "dispatch-namespace", ...options }),
-	durableObject: (options) => ({ type: "durable-object", ...options }),
-	flagship: (options) => ({ type: "flagship", ...options }),
-	hyperdrive: (options) => ({ type: "hyperdrive", ...options }),
-	images: (options = {}) => ({ type: "images", ...options }),
-	kv: (options = {}) => ({ type: "kv", ...options }),
-	logfwdr: (options) => ({ type: "logfwdr", ...options }),
-	media: (options = {}) => ({ type: "media", ...options }),
-	mtlsCertificate: (options) => ({ type: "mtls-certificate", ...options }),
-	pipeline: (options) => ({ type: "pipeline", ...options }),
-	queue: (options) => ({ type: "queue", ...options }),
-	rateLimit: (options) => ({ type: "rate-limit", ...options }),
-	r2: (options = {}) => ({ type: "r2", ...options }),
-	secret: () => ({ type: "secret" }),
-	secretsStoreSecret: (options) => ({
-		type: "secrets-store-secret",
+	artifacts: (options: ArtifactsBindingOptions) => ({
+		type: "artifacts" as const,
 		...options,
 	}),
-	sendEmail: (options = {}) => ({ type: "send-email", ...options }),
-	stream: (options = {}) => ({ type: "stream", ...options }),
-	unsafe: (type) => ({ type }),
-	vectorize: (options) => ({ type: "vectorize", ...options }),
-	versionMetadata: () => ({ type: "version-metadata" }),
-	vpcService: (options) => ({ type: "vpc-service", ...options }),
-	vpcNetwork: (options) => ({ type: "vpc-network", ...options }),
-	worker: (options) => ({ type: "worker", ...options }),
-	workerLoader: () => ({ type: "worker-loader" }),
-	workflow: (options) => ({ type: "workflow", ...options }),
+	assets: () => ({ type: "assets" as const }),
+	browser: (options = {}) => ({ type: "browser" as const, ...options }),
+	d1: (options = {}) => ({ type: "d1" as const, ...options }),
+	dispatchNamespace: (options: DispatchNamespaceBindingOptions) => ({
+		type: "dispatch-namespace" as const,
+		...options,
+	}),
+	durableObject: (options: DurableObjectBindingOptions) => ({
+		type: "durable-object" as const,
+		...options,
+	}),
+	flagship: (options: FlagshipBindingOptions) => ({
+		type: "flagship" as const,
+		...options,
+	}),
+	hyperdrive: (options: HyperdriveBindingOptions) => ({
+		type: "hyperdrive" as const,
+		...options,
+	}),
+	images: (options = {}) => ({ type: "images" as const, ...options }),
+	kv: (options = {}) => ({ type: "kv" as const, ...options }),
+	logfwdr: (options: LogfwdrBindingOptions) => ({
+		type: "logfwdr" as const,
+		...options,
+	}),
+	media: (options = {}) => ({ type: "media" as const, ...options }),
+	mtlsCertificate: (options: MtlsCertificateBindingOptions) => ({
+		type: "mtls-certificate" as const,
+		...options,
+	}),
+	pipeline: (options: PipelineBindingOptions) => ({
+		type: "pipeline" as const,
+		...options,
+	}),
+	queue: (options: QueueBindingOptions) => ({
+		type: "queue" as const,
+		...options,
+	}),
+	rateLimit: (options: RateLimitBindingOptions) => ({
+		type: "rate-limit" as const,
+		...options,
+	}),
+	r2: (options = {}) => ({ type: "r2" as const, ...options }),
+	secret: () => ({ type: "secret" as const }),
+	secretsStoreSecret: (options: SecretsStoreSecretBindingOptions) => ({
+		type: "secrets-store-secret" as const,
+		...options,
+	}),
+	sendEmail: (options = {}) => ({ type: "send-email" as const, ...options }),
+	stream: (options = {}) => ({ type: "stream" as const, ...options }),
+	unsafe: <T extends `unsafe-${string}`>(type: T) => ({ type }),
+	vectorize: (options: VectorizeBindingOptions) => ({
+		type: "vectorize" as const,
+		...options,
+	}),
+	versionMetadata: () => ({ type: "version-metadata" as const }),
+	vpcService: (options: VpcServiceBindingOptions) => ({
+		type: "vpc-service" as const,
+		...options,
+	}),
+	vpcNetwork: (options: VpcNetworkBindingOptions) => ({
+		type: "vpc-network" as const,
+		...options,
+	}),
+	worker: (options: WorkerBindingOptions) => ({
+		type: "worker" as const,
+		...options,
+	}),
+	workerLoader: () => ({ type: "worker-loader" as const }),
+	workflow: (options: WorkflowBindingOptions) => ({
+		type: "workflow" as const,
+		...options,
+	}),
 };
+
+/**
+ * Runtime bindings object - the actual implementation that can be passed to env functions.
+ * Cast to Bindings to allow use with any config type parameter.
+ */
+export const bindings = bindingsImpl as Bindings;

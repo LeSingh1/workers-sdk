@@ -1,8 +1,8 @@
-import { defineConfig } from "@cloudflare/worker-config";
 import * as Worker from "./src" with { type: "cf-worker" };
+import { defineConfig } from "@cloudflare/worker-config";
 
 export default defineConfig({
-	name: "my-worker",
+	name: "worker-a",
 	entrypoint: Worker,
 	env: (bindings) => ({
 		MY_AI: bindings.ai(),
