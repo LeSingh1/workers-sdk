@@ -483,7 +483,7 @@ const testCases: TestCase[] = [
 		getExpectFetchToMatch: (expect) => [expect.stringContaining(`"id"`)],
 	},
 	{
-		name: "Pipelines",
+		name: "Pipelines (legacy `pipeline` binding)",
 		scriptPath: "pipelines.js",
 		setup: () => ({
 			remoteProxySessionConfig: {
@@ -505,6 +505,32 @@ const testCases: TestCase[] = [
 		}),
 		getExpectFetchToMatch: (expect) => [
 			expect.stringContaining(`Data sent to env.PIPELINE`),
+		],
+		worksWithoutRemoteBindings: true,
+	},
+	{
+		name: "Pipelines (`stream` binding)",
+		scriptPath: "pipelines-stream.js",
+		setup: () => ({
+			remoteProxySessionConfig: {
+				bindings: {
+					STREAM: {
+						type: "pipeline",
+						stream: "preserve_e2e_pipelines",
+					},
+				},
+			},
+			miniflareConfig: (connection) => ({
+				pipelines: {
+					STREAM: {
+						stream: "preserve_e2e_pipelines",
+						remoteProxyConnectionString: connection,
+					},
+				},
+			}),
+		}),
+		getExpectFetchToMatch: (expect) => [
+			expect.stringContaining(`Data sent to env.STREAM`),
 		],
 		worksWithoutRemoteBindings: true,
 	},
