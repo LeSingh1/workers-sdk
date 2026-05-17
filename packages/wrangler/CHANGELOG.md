@@ -1,5 +1,45 @@
 # wrangler
 
+## 4.93.0
+
+### Minor Changes
+
+- [#13901](https://github.com/cloudflare/workers-sdk/pull/13901) [`aac7ca0`](https://github.com/cloudflare/workers-sdk/commit/aac7ca02803567adad2d5372124ace1f4ed9c315) Thanks [@bghira](https://github.com/bghira)! - Add `wrangler ai models schema` command for fetching model schemas
+
+  You can now run `wrangler ai models schema <model>` to fetch the input and output schema for a Workers AI model from the public model catalog schema endpoint.
+
+- [#12656](https://github.com/cloudflare/workers-sdk/pull/12656) [`ae047ee`](https://github.com/cloudflare/workers-sdk/commit/ae047eedd5c59452e05a122f14ac4ff6c5ff8ad2) Thanks [@mikenomitch](https://github.com/mikenomitch)! - Add `--containers-rollout=none`
+
+  This allows you to skip deploying a container. This is useful if you know that your container is not going to be updated or you don't have Docker locally, but still want to make changes to your Worker.
+
+- [#13901](https://github.com/cloudflare/workers-sdk/pull/13901) [`aac7ca0`](https://github.com/cloudflare/workers-sdk/commit/aac7ca02803567adad2d5372124ace1f4ed9c315) Thanks [@bghira](https://github.com/bghira)! - Add `wrangler ai models list` command for querying the Workers AI model catalog
+
+  `wrangler ai models list` accepts `--search`, `--task`, `--author`, `--source`, and `--hide-experimental`, matching the public model catalog search endpoint.
+
+### Patch Changes
+
+- [#11896](https://github.com/cloudflare/workers-sdk/pull/11896) [`c5c9e20`](https://github.com/cloudflare/workers-sdk/commit/c5c9e20bf6c806289e33fd599b05c2fb22473999) Thanks [@staticpayload](https://github.com/staticpayload)! - Surface remote proxy session errors
+
+  When remote bindings fail to start, include the controller reason and root
+  cause in the error message to make failures like missing `cloudflared` clearer.
+
+- [#13932](https://github.com/cloudflare/workers-sdk/pull/13932) [`ebf4b24`](https://github.com/cloudflare/workers-sdk/commit/ebf4b24226060d0ea714e9221a1f2744033729cb) Thanks [@zebp](https://github.com/zebp)! - Fix local Workflow startup when compatibility flags include `experimental`
+
+  Miniflare now deduplicates compatibility flags for the internal Workflow engine service. This prevents `wrangler dev` from failing with `Compatibility flag specified multiple times: experimental` when the user's Worker already enables that flag.
+
+- [#13929](https://github.com/cloudflare/workers-sdk/pull/13929) [`895baf5`](https://github.com/cloudflare/workers-sdk/commit/895baf5ec2ed4a0dfed45e5ede536ad1c913be96) Thanks [@Caio-Nogueira](https://github.com/Caio-Nogueira)! - Prompt to provision a workers.dev subdomain before deploying Workflows
+
+  Wrangler now checks for the account-level workers.dev subdomain when deploying Workflows, even if the Worker is not being published to workers.dev. If the subdomain has not been registered yet, Wrangler prompts to create one before calling the Workflows deploy API so users avoid an opaque server-side deployment failure.
+
+- [#13930](https://github.com/cloudflare/workers-sdk/pull/13930) [`7bcdf45`](https://github.com/cloudflare/workers-sdk/commit/7bcdf45580f29ec9a3f0a77f70d8a26d301d19c3) Thanks [@shiminshen](https://github.com/shiminshen)! - Sweep stale `.wrangler/tmp/*` dirs left behind by abnormal exits
+
+  A `wrangler dev` session creates `.wrangler/tmp/bundle-*` and `.wrangler/tmp/dev-*` directories at startup and removes them via a `signal-exit` hook on graceful shutdown. When the process exited abnormally (SIGKILL, OOM, host crash) those directories were left behind and accumulated across sessions, slowing down dependency-walking tools that follow the bundle-emitted absolute-path imports.
+
+  `wrangler` now sweeps entries in `.wrangler/tmp/` older than 24 hours when a new temporary directory is requested, bounding the leak regardless of how prior sessions exited.
+
+- Updated dependencies [[`ebf4b24`](https://github.com/cloudflare/workers-sdk/commit/ebf4b24226060d0ea714e9221a1f2744033729cb)]:
+  - miniflare@4.20260515.1
+
 ## 4.92.0
 
 ### Minor Changes

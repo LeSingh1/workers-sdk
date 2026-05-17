@@ -1,5 +1,13 @@
 # miniflare
 
+## 4.20260515.1
+
+### Patch Changes
+
+- [#13932](https://github.com/cloudflare/workers-sdk/pull/13932) [`ebf4b24`](https://github.com/cloudflare/workers-sdk/commit/ebf4b24226060d0ea714e9221a1f2744033729cb) Thanks [@zebp](https://github.com/zebp)! - Fix local Workflow startup when compatibility flags include `experimental`
+
+  Miniflare now deduplicates compatibility flags for the internal Workflow engine service. This prevents `wrangler dev` from failing with `Compatibility flag specified multiple times: experimental` when the user's Worker already enables that flag.
+
 ## 4.20260515.0
 
 ### Patch Changes

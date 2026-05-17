@@ -1,5 +1,13 @@
 # @cloudflare/containers-shared
 
+## 0.15.0
+
+### Minor Changes
+
+- [#12656](https://github.com/cloudflare/workers-sdk/pull/12656) [`ae047ee`](https://github.com/cloudflare/workers-sdk/commit/ae047eedd5c59452e05a122f14ac4ff6c5ff8ad2) Thanks [@mikenomitch](https://github.com/mikenomitch)! - Add `--containers-rollout=none`
+
+  This allows you to skip deploying a container. This is useful if you know that your container is not going to be updated or you don't have Docker locally, but still want to make changes to your Worker.
+
 ## 0.14.1
 
 ### Patch Changes
