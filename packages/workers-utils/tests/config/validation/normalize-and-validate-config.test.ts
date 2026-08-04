@@ -4421,6 +4421,37 @@ describe("normalizeAndValidateConfig()", () => {
 			`);
 		});
 
+		it("should error if send_email address lists are not arrays of strings", ({
+			expect,
+		}) => {
+			const { diagnostics } = normalizeAndValidateConfig(
+				{
+					send_email: [
+						{ name: "SEB1", allowed_destination_addresses: { a: 1 } },
+						{ name: "SEB2", allowed_destination_addresses: [1, 2, 3] },
+						{ name: "SEB3", allowed_destination_addresses: null },
+						{ name: "SEB4", allowed_sender_addresses: { a: 1 } },
+						{ name: "SEB5", allowed_sender_addresses: [1, 2, 3] },
+						{ name: "SEB6", allowed_sender_addresses: null },
+					],
+				} as unknown as RawConfig,
+				undefined,
+				undefined,
+				{ env: undefined }
+			);
+
+			expect(diagnostics.hasWarnings()).toBe(false);
+			expect(diagnostics.renderErrors()).toMatchInlineSnapshot(`
+				"Processing wrangler configuration:
+				  - "send_email[0]" bindings should, optionally, have a []string "allowed_destination_addresses" field but got {"name":"SEB1","allowed_destination_addresses":{"a":1}}.
+				  - "send_email[1]" bindings should, optionally, have a []string "allowed_destination_addresses" field but got {"name":"SEB2","allowed_destination_addresses":[1,2,3]}.
+				  - "send_email[2]" bindings should, optionally, have a []string "allowed_destination_addresses" field but got {"name":"SEB3","allowed_destination_addresses":null}.
+				  - "send_email[3]" bindings should, optionally, have a []string "allowed_sender_addresses" field but got {"name":"SEB4","allowed_sender_addresses":{"a":1}}.
+				  - "send_email[4]" bindings should, optionally, have a []string "allowed_sender_addresses" field but got {"name":"SEB5","allowed_sender_addresses":[1,2,3]}.
+				  - "send_email[5]" bindings should, optionally, have a []string "allowed_sender_addresses" field but got {"name":"SEB6","allowed_sender_addresses":null}."
+			`);
+		});
+
 		describe("[d1_databases]", () => {
 			it("should error if d1_databases is an object", ({ expect }) => {
 				const { diagnostics } = normalizeAndValidateConfig(

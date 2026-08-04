@@ -551,6 +551,28 @@ export const isOptionalProperty = <T extends object>(
 	!hasProperty<T>(target, property) || typeof target[property] === type;
 
 /**
+ * Returns whether the optional property `property` of `target`, when present,
+ * is an array of strings.
+ *
+ * `isOptionalProperty(target, property, "object")` is not enough for a
+ * `string[]` field: `typeof` reports `"object"` for `null`, for a plain object,
+ * and for an array of any element type.
+ *
+ * @param target the object to test.
+ * @param property the property name to test.
+ * @returns whether `property` is absent, or present and an array of strings.
+ */
+export const isOptionalStringArrayProperty = <T extends object>(
+	target: object,
+	property: keyof T
+): target is T =>
+	!hasProperty<T>(target, property) ||
+	(Array.isArray(target[property]) &&
+		(target[property] as unknown[]).every(
+			(entry) => typeof entry === "string"
+		));
+
+/**
  * Returns whether `target` has the property `property`.
  *
  * @param target the object to test.

@@ -21,6 +21,7 @@ import {
 	isMutuallyExclusiveWith,
 	isOneOf,
 	isOptionalProperty,
+	isOptionalStringArrayProperty,
 	isRequiredProperty,
 	isString,
 	isStringArray,
@@ -4053,7 +4054,7 @@ const validateSendEmailBinding: ValidatorFn = (diagnostics, field, value) => {
 		);
 		isValid = false;
 	}
-	if (!isOptionalProperty(value, "allowed_destination_addresses", "object")) {
+	if (!isOptionalStringArrayProperty(value, "allowed_destination_addresses")) {
 		diagnostics.errors.push(
 			`"${field}" bindings should, optionally, have a []string "allowed_destination_addresses" field but got ${JSON.stringify(
 				value
@@ -4061,7 +4062,7 @@ const validateSendEmailBinding: ValidatorFn = (diagnostics, field, value) => {
 		);
 		isValid = false;
 	}
-	if (!isOptionalProperty(value, "allowed_sender_addresses", "object")) {
+	if (!isOptionalStringArrayProperty(value, "allowed_sender_addresses")) {
 		diagnostics.errors.push(
 			`"${field}" bindings should, optionally, have a []string "allowed_sender_addresses" field but got ${JSON.stringify(
 				value
