@@ -93,6 +93,7 @@ import {
 } from "./runtime";
 import {
 	isFileNotFoundError,
+	isServerNotRunningError,
 	MiniflareCoreError,
 	NoOpLog,
 	parseWithRootPath,
@@ -1840,7 +1841,12 @@ export class Miniflare {
 	#stopLoopbackServer(): Promise<void> {
 		return new Promise((resolve, reject) => {
 			assert(this.#loopbackServer !== undefined);
-			this.#loopbackServer.stop((err) => (err ? reject(err) : resolve()));
+			// A second `dispose()` finds the loopback server already stopped. That
+			// is not a failure to stop it, and rejecting would skip every cleanup
+			// step after this one.
+			this.#loopbackServer.stop((err) =>
+				err && !isServerNotRunningError(err) ? reject(err) : resolve()
+			);
 		});
 	}
 

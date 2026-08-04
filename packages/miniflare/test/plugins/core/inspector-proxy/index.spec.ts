@@ -778,6 +778,24 @@ test("InspectorProxy: can proxy messages > 1MB", async ({ expect }) => {
 	expect(await res.text()).toBe(`body:${LARGE_STRING}`);
 });
 
+test("InspectorProxy: dispose() can be called more than once", async ({
+	expect,
+}) => {
+	const mf = new Miniflare({
+		inspectorPort: 0,
+		workers: [{ script: nullScript, unsafeInspectorProxy: true }],
+	});
+	await getInspectorPortReady(mf);
+
+	await mf.dispose();
+
+	// The inspector proxy server is already closed on a second `dispose()`.
+	// Rejecting there would skip the cleanup steps that follow it: unregistering
+	// from the dev registry and stopping its file watcher, shutting down the
+	// Hyperdrive proxies, and removing the instance from the instance registry.
+	await expect(mf.dispose()).resolves.toBeUndefined();
+});
+
 async function getInspectorPortReady(mf: Miniflare) {
 	await mf.ready;
 

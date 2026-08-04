@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { DeferredPromise } from "miniflare:shared";
 import WebSocket, { WebSocketServer } from "ws";
 import { version as miniflareVersion } from "../../../../package.json";
+import { isServerNotRunningError } from "../../../shared";
 import { InspectorProxy } from "./inspector-proxy";
 import type { Log } from "../../../shared";
 import type { IncomingMessage, Server } from "node:http";
@@ -333,7 +334,13 @@ export class InspectorProxyController {
 		// the close callback from firing, hanging the dispose.
 		server.closeAllConnections();
 		return new Promise((resolve, reject) => {
-			server.close((err) => (err ? reject(err) : resolve()));
+			// The server is already closed if `dispose()` has been called before,
+			// which is not a failure to dispose. Rejecting here would abort the
+			// rest of `Miniflare#dispose()`, leaving the dev registry watcher and
+			// the Hyperdrive proxies running.
+			server.close((err) =>
+				err && !isServerNotRunningError(err) ? reject(err) : resolve()
+			);
 		});
 	}
 }

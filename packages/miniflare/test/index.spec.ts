@@ -2283,6 +2283,17 @@ test("Miniflare: dispose() immediately after construction", async ({
 	await readyAssertion;
 });
 
+test("Miniflare: dispose() can be called more than once", async ({
+	expect,
+}) => {
+	const mf = new Miniflare({ script: "", modules: true });
+	await mf.ready;
+	await mf.dispose();
+	// A second `dispose()` used to reject with `ERR_SERVER_NOT_RUNNING` from the
+	// already-stopped loopback server, abandoning every cleanup step after it.
+	await expect(mf.dispose()).resolves.toBeUndefined();
+});
+
 test("Miniflare: getBindings() returns all bindings", async ({
 	expect,
 	onTestFinished,

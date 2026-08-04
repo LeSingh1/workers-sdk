@@ -62,3 +62,21 @@ export const isFileNotFoundError = (e: unknown): boolean => {
 		typeof e === "object" && e !== null && "code" in e && e.code === "ENOENT"
 	);
 };
+
+/**
+ * Returns whether `e` is the error Node.js passes to a `server.close()`
+ * callback when the server was not listening in the first place.
+ *
+ * Closing an already-closed server is not a failure to close it, so disposal
+ * paths treat this as success. That keeps `dispose()` idempotent: without it, a
+ * second `dispose()` rejects part-way through and skips the cleanup steps that
+ * follow.
+ */
+export const isServerNotRunningError = (e: unknown): boolean => {
+	return (
+		typeof e === "object" &&
+		e !== null &&
+		"code" in e &&
+		e.code === "ERR_SERVER_NOT_RUNNING"
+	);
+};
