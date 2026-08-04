@@ -137,8 +137,10 @@ async function resolveDevConfig(
 
 	const initialIpListenCheck = initialIp === "*" ? "0.0.0.0" : initialIp;
 
-	const useContainers =
-		config.dev.enable_containers && config.containers?.length;
+	const enableContainers =
+		input.dev?.enableContainers ?? config.dev.enable_containers;
+
+	const useContainers = enableContainers && config.containers?.length;
 
 	return {
 		auth,
@@ -175,8 +177,7 @@ async function resolveDevConfig(
 		multiworkerPrimary: input.dev?.multiworkerPrimary,
 		inferOriginFromRoutes: input.dev?.inferOriginFromRoutes ?? true,
 		routeRequestsByRoutes: input.dev?.routeRequestsByRoutes ?? false,
-		enableContainers:
-			input.dev?.enableContainers ?? config.dev.enable_containers,
+		enableContainers,
 		dockerPath: input.dev?.dockerPath ?? getDockerPath(),
 		containerEngine: useContainers
 			? (input.dev?.containerEngine ??

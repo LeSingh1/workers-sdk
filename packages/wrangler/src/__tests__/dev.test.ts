@@ -1757,6 +1757,41 @@ describe.sequential("wrangler dev", () => {
 			const config = await runWranglerUntilConfig("dev");
 			expect(config.dev.containerEngine).toEqual("blah.sock");
 		});
+
+		it("should be resolved when containers are enabled by --enable-containers", async ({
+			expect,
+		}) => {
+			writeWranglerConfig({
+				main: "index.js",
+				dev: {
+					enable_containers: false,
+				},
+				...minimalContainerConfig,
+			});
+			fs.writeFileSync("index.js", `export default {};`);
+
+			const config = await runWranglerUntilConfig("dev --enable-containers");
+			expect(config.dev.enableContainers).toBe(true);
+			expect(config.dev.containerEngine).toEqual(
+				"unix:///current/run/docker.sock"
+			);
+		});
+
+		it("should not be resolved when containers are disabled by --enable-containers=false", async ({
+			expect,
+		}) => {
+			writeWranglerConfig({
+				main: "index.js",
+				...minimalContainerConfig,
+			});
+			fs.writeFileSync("index.js", `export default {};`);
+
+			const config = await runWranglerUntilConfig(
+				"dev --enable-containers=false"
+			);
+			expect(config.dev.enableContainers).toBe(false);
+			expect(config.dev.containerEngine).toBeUndefined();
+		});
 	});
 
 	describe("durable_objects", () => {
