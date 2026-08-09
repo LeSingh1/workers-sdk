@@ -19,6 +19,21 @@ const parseStringAsObject = <T>(maybeString: string | T): T =>
 		? (JSON.parse(maybeString) as T)
 		: maybeString;
 
+/**
+ * `decodeURIComponent` throws a `URIError` on a malformed escape sequence such
+ * as a lone `%`, which is a perfectly legal path character. A request for an
+ * undecodable path is a request for an asset that cannot be in the manifest, so
+ * fall back to the raw value and let the normal lookup miss produce a
+ * `NotFoundError` rather than letting a `URIError` escape `getAssetFromKV`.
+ */
+const safeDecodeURIComponent = (value: string): string => {
+	try {
+		return decodeURIComponent(value);
+	} catch {
+		return value;
+	}
+};
+
 function getAssetFromKVDefaultOptions(): Partial<Options> {
 	return {
 		ASSET_NAMESPACE:
@@ -142,7 +157,7 @@ const getAssetFromKV = async (
 		requestKey = options.mapRequestToAsset(request);
 	} else if (ASSET_MANIFEST[rawPathKey]) {
 		requestKey = request;
-	} else if (ASSET_MANIFEST[decodeURIComponent(rawPathKey)]) {
+	} else if (ASSET_MANIFEST[safeDecodeURIComponent(rawPathKey)]) {
 		pathIsEncoded = true;
 		requestKey = request;
 	} else {
@@ -151,7 +166,7 @@ const getAssetFromKV = async (
 			/^\/+/,
 			""
 		);
-		if (ASSET_MANIFEST[decodeURIComponent(mappedRawPathKey)]) {
+		if (ASSET_MANIFEST[safeDecodeURIComponent(mappedRawPathKey)]) {
 			pathIsEncoded = true;
 			requestKey = mappedRequest;
 		} else {
@@ -169,7 +184,7 @@ const getAssetFromKV = async (
 
 	const parsedUrl = new URL(requestKey.url);
 	const pathname = pathIsEncoded
-		? decodeURIComponent(parsedUrl.pathname)
+		? safeDecodeURIComponent(parsedUrl.pathname)
 		: parsedUrl.pathname; // decode percentage encoded path only when necessary
 
 	// pathKey is the file path to look up in the manifest

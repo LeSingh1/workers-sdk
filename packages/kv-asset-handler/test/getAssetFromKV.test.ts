@@ -1,5 +1,6 @@
 import { beforeEach, test } from "vitest";
 import { getAssetFromKV, mapRequestToAsset } from "../src/index";
+import { NotFoundError } from "../src/types";
 import {
 	getEvent,
 	mockGlobalScope,
@@ -102,6 +103,17 @@ test("getAssetFromKV non ASCII path support", async ({ expect }) => {
 	} else {
 		expect.fail("Response was undefined");
 	}
+});
+
+test("getAssetFromKV throws NotFoundError for an undecodable path", async ({
+	expect,
+}) => {
+	// A lone `%` is a legal path character but a malformed escape sequence, so
+	// `decodeURIComponent` throws a `URIError`. Callers catch `NotFoundError` to
+	// serve a 404, so a `URIError` escaping here becomes a 500.
+	const event = getEvent(new Request("https://example.com/%not-in-manifest.html"));
+
+	await expect(getAssetFromKV(event)).rejects.toThrow(NotFoundError);
 });
 
 test("getAssetFromKV supports browser percent encoded URLs", async ({
