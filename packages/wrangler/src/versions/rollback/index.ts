@@ -68,12 +68,17 @@ export const versionsRollbackCommand = createCommand({
 				endMessage: "",
 			}));
 
-		const message = await prompt(
-			"Please provide an optional message for this rollback (120 characters max)",
-			{
-				defaultValue: args.message ?? "Rollback",
-			}
-		);
+		// `--yes` is documented as "Automatically accept defaults to prompts", so
+		// take each prompt's default rather than asking for it.
+		const defaultMessage = args.message ?? "Rollback";
+		const message = args.yes
+			? defaultMessage
+			: await prompt(
+					"Please provide an optional message for this rollback (120 characters max)",
+					{
+						defaultValue: defaultMessage,
+					}
+				);
 
 		const version = await fetchVersion(
 			config,
@@ -88,10 +93,12 @@ export const versionsRollbackCommand = createCommand({
 		const rollbackTraffic = new Map([[versionId, 100]]);
 		printVersions([version], rollbackTraffic);
 
-		const confirmed = await confirm(
-			"Are you sure you want to deploy this Worker Version to 100% of traffic?",
-			{ defaultValue: true }
-		);
+		const confirmed =
+			args.yes ||
+			(await confirm(
+				"Are you sure you want to deploy this Worker Version to 100% of traffic?",
+				{ defaultValue: true }
+			));
 		if (!confirmed) {
 			cli.cancel("Aborting rollback...");
 			return;

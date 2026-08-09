@@ -139,6 +139,43 @@ describe("rollback", () => {
 		expect(std.err).toMatchInlineSnapshot(`""`);
 	});
 
+	test("-y uses --message as the rollback message without prompting", async ({
+		expect,
+	}) => {
+		setIsTTY(true);
+		mockGetDeployments(expect);
+		mockGetVersion(expect, "version-id-1");
+		mockGetVersion(expect, "rollback-version");
+
+		let sentAnnotations: Record<string, string> | undefined;
+		let deployed = false;
+		msw.use(
+			http.post(
+				`*/accounts/:accountId/workers/scripts/:scriptName/deployments`,
+				async ({ request }) => {
+					const body = (await request.json()) as {
+						annotations?: Record<string, string>;
+					};
+					sentAnnotations = body.annotations;
+					deployed = true;
+					return HttpResponse.json(createFetchResult({}));
+				},
+				{ once: true }
+			)
+		);
+
+		await runWrangler(
+			'rollback --name script-name --version-id rollback-version --message "ci rollback" -y'
+		);
+
+		// The POST only happens if the 100%-of-traffic confirmation was accepted,
+		// and the annotation shows --message was used verbatim rather than being
+		// re-asked for at the prompt.
+		expect(deployed).toBe(true);
+		expect(sentAnnotations?.["workers/message"]).toEqual("ci rollback");
+		expect(std.err).toMatchInlineSnapshot(`""`);
+	});
+
 	test("rolling back with changed secrets prompts confirmation", async ({
 		expect,
 	}) => {
