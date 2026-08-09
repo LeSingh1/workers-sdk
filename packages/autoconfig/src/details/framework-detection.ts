@@ -312,30 +312,36 @@ function maybeFindDetectedFramework(
 		return settingsForOnlyKnownFrameworks[0];
 	}
 
-	if (settingsForOnlyKnownFrameworks.length === 2) {
-		const settingsForOnlyKnownFrameworksIds = new Set<string>(
-			settingsForOnlyKnownFrameworks.map(({ framework }) => framework.id)
+	// Some frameworks (e.g. Vite, Hono) can serve as auxiliary tooling for a primary
+	// framework (e.g. Vite with React, Hono with Waku). Discard them one at a time, in
+	// priority order, for as long as doing so leaves at least one framework behind. If a
+	// single framework remains it is the primary one.
+	//
+	// Note a framework can pull in more than one of these at once — Waku is Vite-based and
+	// serves with Hono, so a Waku project can be detected as all three. Discarding only
+	// when exactly two frameworks were detected left that case unresolved.
+	const idsOfAuxiliaryFrameworks = ["vite", "hono"];
+
+	let remainingFrameworkSettings = settingsForOnlyKnownFrameworks;
+
+	for (const auxiliaryFrameworkId of idsOfAuxiliaryFrameworks) {
+		if (remainingFrameworkSettings.length === 1) {
+			break;
+		}
+
+		const withoutAuxiliaryFramework = remainingFrameworkSettings.filter(
+			({ framework }) => framework.id !== auxiliaryFrameworkId
 		);
 
-		// Some frameworks (e.g. Vite, Hono) can serve as auxiliary tooling for a primary
-		// framework (e.g. Vite with React, Hono with Waku). When exactly two frameworks
-		// are detected and one is auxiliary, we discard it and return the primary one.
-		const idsOfAuxiliaryFrameworks = ["vite", "hono"];
-
-		for (const auxiliaryFrameworkId of idsOfAuxiliaryFrameworks) {
-			if (settingsForOnlyKnownFrameworksIds.has(auxiliaryFrameworkId)) {
-				const nonAuxiliaryFrameworkSettings =
-					settingsForOnlyKnownFrameworks.find(
-						({ framework }) => framework.id !== auxiliaryFrameworkId
-					);
-
-				// Note: here nonAuxiliaryFrameworkSettings should always be defined, it could be undefined only if the
-				//       same framework is actually detected twice (which shouldn't be possible).
-				if (nonAuxiliaryFrameworkSettings) {
-					return nonAuxiliaryFrameworkSettings;
-				}
-			}
+		// Keep the auxiliary framework if it is all that is left: it is a better answer
+		// than none, and it preserves the behaviour for e.g. a plain Hono + Vite project.
+		if (withoutAuxiliaryFramework.length > 0) {
+			remainingFrameworkSettings = withoutAuxiliaryFramework;
 		}
+	}
+
+	if (remainingFrameworkSettings.length === 1) {
+		return remainingFrameworkSettings[0];
 	}
 
 	// If we've detected multiple frameworks, and we're in a non interactive session (e.g. CI) let's stay on the safe side and error

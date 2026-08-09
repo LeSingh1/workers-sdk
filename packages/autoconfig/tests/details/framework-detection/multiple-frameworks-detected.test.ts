@@ -58,6 +58,40 @@ describe("detectFramework() / multiple frameworks detected", () => {
 			expect(result.detectedFramework?.framework.id).toBe("waku");
 		});
 
+		it("returns Waku when Waku, Hono and Vite are all detected", async ({
+			expect,
+		}) => {
+			// Waku is Vite-based and serves with Hono, so all three can be detected at
+			// once. Two auxiliary frameworks still leave exactly one primary framework.
+			await seed({
+				"package.json": JSON.stringify({
+					dependencies: { waku: "0.21", hono: "4", vite: "5" },
+				}),
+				"package-lock.json": JSON.stringify({ lockfileVersion: 3 }),
+			});
+
+			const result = await detectFramework(process.cwd(), context);
+
+			expect(result.detectedFramework?.framework.id).toBe("waku");
+		});
+
+		it("returns Hono when only Hono and Vite are detected", async ({
+			expect,
+		}) => {
+			// Both are auxiliary, so there is no primary framework to prefer. Discarding
+			// Vite must not discard Hono as well.
+			await seed({
+				"package.json": JSON.stringify({
+					dependencies: { hono: "4", vite: "5" },
+				}),
+				"package-lock.json": JSON.stringify({ lockfileVersion: 3 }),
+			});
+
+			const result = await detectFramework(process.cwd(), context);
+
+			expect(result.detectedFramework?.framework.id).toBe("hono");
+		});
+
 		it("returns Hydrogen (not React Router) when both Hydrogen and React Router are detected", async ({
 			expect,
 		}) => {
@@ -124,6 +158,23 @@ describe("detectFramework() / multiple frameworks detected", () => {
 					]
 				`
 			);
+		});
+
+		it("does not throw when Waku, Hono and Vite are all detected", async ({
+			expect,
+		}) => {
+			// Regression guard: a Waku project is detected as Waku + Vite + Hono, which
+			// used to skip auxiliary-framework filtering entirely and hard-fail in CI.
+			await seed({
+				"package.json": JSON.stringify({
+					dependencies: { waku: "0.21", hono: "4", vite: "5" },
+				}),
+				"package-lock.json": JSON.stringify({ lockfileVersion: 3 }),
+			});
+
+			const result = await detectFramework(process.cwd(), ciContext);
+
+			expect(result.detectedFramework?.framework.id).toBe("waku");
 		});
 
 		it("throws MultipleFrameworksCIError when multiple unknown frameworks are detected", async ({
