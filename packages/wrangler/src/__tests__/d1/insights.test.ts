@@ -51,6 +51,27 @@ describe("getDurationDates()", () => {
 		);
 	});
 
+	it("should throw a UserError if the duration value is not a number", ({
+		expect,
+	}) => {
+		// Without a numeric guard this reaches `startDate.toISOString()` as an
+		// Invalid Date and throws a bare `RangeError: Invalid time value`, which
+		// wrangler reports as an internal error asking the user to file a bug.
+		expect(() => getDurationDates("xd")).toThrow(
+			`Invalid --time-period value "xd": expected a positive number followed by d (days), h (hours) or m (minutes). Example: --time-period=7d.`
+		);
+	});
+
+	it("should throw a UserError if the duration value is negative", ({
+		expect,
+	}) => {
+		// `-5d` passes every `> maximum` bounds check and silently yields a start
+		// date five days *after* the end date.
+		expect(() => getDurationDates("-5d")).toThrow(
+			`Invalid --time-period value "-5d": expected a positive number followed by d (days), h (hours) or m (minutes). Example: --time-period=7d.`
+		);
+	});
+
 	it("should return the correct start and end dates", ({ expect }) => {
 		const [startDate, endDate] = getDurationDates("5d");
 

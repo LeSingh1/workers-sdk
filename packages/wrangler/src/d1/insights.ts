@@ -19,6 +19,17 @@ export function getDurationDates(durationString: string) {
 	const durationValue = parseInt(durationString.slice(0, -1));
 	const durationUnit = durationString.slice(-1);
 
+	// Guard before the unit `switch`: a non-numeric value parses to `NaN`, which
+	// passes every `> maximum` bounds check below and only fails much later, when
+	// `startDate.toISOString()` throws a bare `RangeError: Invalid time value`. A
+	// negative value passes them too, and silently produces a reversed range.
+	if (!Number.isFinite(durationValue) || durationValue <= 0) {
+		throw new UserError(
+			`Invalid --time-period value "${durationString}": expected a positive number followed by d (days), h (hours) or m (minutes). Example: --time-period=7d.`,
+			{ telemetryMessage: "d1 insights invalid duration value" }
+		);
+	}
+
 	let startDate;
 	switch (durationUnit) {
 		case "d":
