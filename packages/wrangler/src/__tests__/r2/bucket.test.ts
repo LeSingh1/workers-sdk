@@ -2904,6 +2904,51 @@ describe("r2", () => {
 					`);
 				});
 
+				it("it should use each action's own condition when both expiry and transition are given", async () => {
+					const bucketName = "my-bucket";
+					const ruleId = "my-rule";
+					const prefix = "images/";
+					msw.use(
+						http.get(
+							"*/accounts/:accountId/r2/buckets/:bucketName/lifecycle",
+							async () =>
+								HttpResponse.json(createFetchResult({ rules: [] })),
+							{ once: true }
+						),
+						http.put(
+							"*/accounts/:accountId/r2/buckets/:bucketName/lifecycle",
+							async ({ request }) => {
+								const requestBody = await request.json();
+								expect(requestBody).toEqual({
+									rules: [
+										{
+											id: ruleId,
+											enabled: true,
+											conditions: { prefix: prefix },
+											// 90 days
+											deleteObjectsTransition: {
+												condition: { type: "Age", maxAge: 7776000 },
+											},
+											// 30 days, not the expiry's 90
+											storageClassTransitions: [
+												{
+													condition: { type: "Age", maxAge: 2592000 },
+													storageClass: "InfrequentAccess",
+												},
+											],
+										},
+									],
+								});
+								return HttpResponse.json(createFetchResult({}));
+							},
+							{ once: true }
+						)
+					);
+					await runWrangler(
+						`r2 bucket lifecycle add ${bucketName} --name ${ruleId} --prefix ${prefix} --expire-days 90 --ia-transition-days 30`
+					);
+				});
+
 				it("it should add a date lifecycle rule using command-line arguments and id alias", async () => {
 					const bucketName = "my-bucket";
 					const ruleId = "my-rule";

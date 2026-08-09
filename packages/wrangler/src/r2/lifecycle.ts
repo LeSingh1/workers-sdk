@@ -256,18 +256,21 @@ export const r2BucketLifecycleAddCommand = createCommand({
 					},
 				};
 			} else {
-				if (expireDays !== undefined) {
+				// Each action takes its own condition. Reading them in a fixed order
+				// regardless of `action` meant that, given both `--expire-days` and
+				// `--ia-transition-days`, the transition rule was built from the
+				// expiry value — transitioning and deleting on the same day.
+				const daysForAction =
+					action === "expire" ? expireDays : iaTransitionDays;
+				const dateForAction =
+					action === "expire" ? expireDate : iaTransitionDate;
+
+				if (daysForAction !== undefined) {
 					conditionType = "Age";
-					conditionValue = expireDays;
-				} else if (iaTransitionDays !== undefined) {
-					conditionType = "Age";
-					conditionValue = iaTransitionDays;
-				} else if (expireDate !== undefined) {
+					conditionValue = daysForAction;
+				} else if (dateForAction !== undefined) {
 					conditionType = "Date";
-					conditionValue = expireDate;
-				} else if (iaTransitionDate !== undefined) {
-					conditionType = "Date";
-					conditionValue = iaTransitionDate;
+					conditionValue = dateForAction;
 				} else {
 					conditionValue = await prompt(
 						`Enter the number of days or a date (YYYY-MM-DD) after which to ${formatActionDescription(action)}`
