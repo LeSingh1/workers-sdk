@@ -3602,6 +3602,36 @@ describe("normalizeAndValidateConfig()", () => {
 		});
 
 		describe("[containers]", () => {
+			it("should error, not crash, on malformed ssh key entries", ({
+				expect,
+			}) => {
+				const { diagnostics } = normalizeAndValidateConfig(
+					{
+						name: "w",
+						containers: [
+							{
+								class_name: "C",
+								image: "registry.cloudflare.com/hello:world",
+								authorized_keys: [{ name: "laptop" }, "ssh-ed25519 AAAA", null],
+								trusted_user_ca_keys: [{ name: "ca" }, 42],
+							},
+						],
+					} as unknown as RawConfig,
+					undefined,
+					undefined,
+					{ env: undefined }
+				);
+
+				expect(diagnostics.renderErrors()).toMatchInlineSnapshot(`
+					"Processing wrangler configuration:
+					  - containers.authorized_keys[0].public_key must be a string
+					  - containers.authorized_keys[1] must be an object
+					  - containers.authorized_keys[2] must be an object
+					  - containers.trusted_user_ca_keys[0].public_key must be a string
+					  - containers.trusted_user_ca_keys[1] must be an object"
+				`);
+			});
+
 			it("should error if containers is not an object", ({ expect }) => {
 				const { diagnostics } = normalizeAndValidateConfig(
 					{ containers: "test" } as unknown as RawConfig,

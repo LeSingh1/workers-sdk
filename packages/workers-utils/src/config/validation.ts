@@ -3729,6 +3729,11 @@ function validateContainerApp(
 						const fieldPath = `${field}.authorized_keys[${index}]`;
 						const key = containerAppOptional.authorized_keys[index];
 
+						if (typeof key !== "object" || key === null) {
+							diagnostics.errors.push(`${fieldPath} must be an object`);
+							continue;
+						}
+
 						if (!isRequiredProperty(key, "name", "string")) {
 							diagnostics.errors.push(`${fieldPath}.name must be a string`);
 						}
@@ -3737,9 +3742,9 @@ function validateContainerApp(
 							diagnostics.errors.push(
 								`${fieldPath}.public_key must be a string`
 							);
-						}
-
-						if (!key.public_key.toLowerCase().startsWith("ssh-ed25519")) {
+						} else if (
+							!key.public_key.toLowerCase().startsWith("ssh-ed25519")
+						) {
 							diagnostics.errors.push(
 								`${fieldPath}.public_key is a unsupported key type. Please provide a ED25519 public key.`
 							);
@@ -3758,6 +3763,11 @@ function validateContainerApp(
 						const fieldPath = `${field}.trusted_user_ca_keys[${index}]`;
 						const key = containerAppOptional.trusted_user_ca_keys[index];
 
+						if (typeof key !== "object" || key === null) {
+							diagnostics.errors.push(`${fieldPath} must be an object`);
+							continue;
+						}
+
 						if (!isOptionalProperty(key, "name", "string")) {
 							diagnostics.errors.push(`${fieldPath}.name must be a string`);
 						}
@@ -3766,9 +3776,9 @@ function validateContainerApp(
 							diagnostics.errors.push(
 								`${fieldPath}.public_key must be a string`
 							);
-						}
-
-						if (!key.public_key.toLowerCase().startsWith("ssh-ed25519")) {
+						} else if (
+							!key.public_key.toLowerCase().startsWith("ssh-ed25519")
+						) {
 							diagnostics.errors.push(
 								`${fieldPath}.public_key is a unsupported key type. Please provide a ED25519 public key.`
 							);
